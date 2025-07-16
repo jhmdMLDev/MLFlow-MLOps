@@ -1,0 +1,53 @@
+{
+  "components": {
+    "comp-custom-training-component": {
+      "executorLabel": "exec-custom-training-component"
+    }
+  },
+  "deploymentSpec": {
+    "executors": {
+      "exec-custom-training-component": {
+        "container": {
+          "args": [
+            "--executor_input",
+            "{{$}}",
+            "--function_to_execute",
+            "custom_training_component"
+          ],
+          "command": [
+            "sh",
+            "-c",
+            "\nif ! [ -x \"$(command -v pip)\" ]; then\n    python3 -m ensurepip || python3 -m ensurepip --user || apt-get install python3-pip\nfi\n\nPIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet --no-warn-script-location 'kfp==2.9.0' 'google' 'google-cloud-aiplatform' 'typing-extensions>=3.7.4,<5; python_version<\"3.12\"' && \"$0\" \"$@\"\n",
+            "sh",
+            "-ec",
+            "program_path=$(mktemp -d)\n\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\n_KFP_RUNTIME=true python3 -m kfp.dsl.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+            "\nimport kfp\nfrom kfp import dsl\nfrom kfp.dsl import *\nfrom typing import *\n\ndef custom_training_component():\n    from google.cloud import aiplatform\n    # Initialize Vertex AI (this part is correct)\n    aiplatform.init(\n        project=\"analytical-rain-397718\",\n        location=\"northamerica-northeast1\",\n        staging_bucket=\"gs://pm-test5\"\n    )\n    job = aiplatform.CustomJob(\n        display_name=\"schedule-detection-training\",\n        worker_pool_specs=[\n            {\n                \"machine_spec\": {\n                    \"machine_type\": \"n1-standard-4\",\n                    \"accelerator_type\": \"NVIDIA_TESLA_P4\",\n                    \"accelerator_count\": 1,\n                },\n                \"replica_count\": 1,\n                \"container_spec\": {\n                    \"image_uri\": \"northamerica-northeast1-docker.pkg.dev/analytical-rain-397718/left-right-detection/lr_image:latest\",\n                },\n            }\n        ],\n    )\n    job.run()  # This triggers the job to run in the custom component\n\n"
+          ],
+          "image": "python:3.12"
+        }
+      }
+    }
+  },
+  "pipelineInfo": {
+    "name": "daily-detection-training-pipeline"
+  },
+  "root": {
+    "dag": {
+      "tasks": {
+        "custom-training-component": {
+          "cachingOptions": {
+            "enableCache": true
+          },
+          "componentRef": {
+            "name": "comp-custom-training-component"
+          },
+          "taskInfo": {
+            "name": "custom-training-component"
+          }
+        }
+      }
+    }
+  },
+  "schemaVersion": "2.1.0",
+  "sdkVersion": "kfp-2.9.0"
+}

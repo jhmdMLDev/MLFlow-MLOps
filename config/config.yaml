@@ -1,0 +1,18 @@
+# hyperparameters
+train:
+  DATA_DIR: "/gcs/pm-test5/slo_lr_detection/train"
+  IMG_SIZE: 1000
+  PRETRAINED: true
+  EPOCHS: 10
+  GPU_ID: 0
+  LEARNING_RATE: 0.00001
+  MOMENTUM: 0.99
+  WEIGHT_DECAY: 1e-8
+  BATCH_SIZE: 4
+  NUM_WORKERS: 0
+  CHECK_PATH: "/gcs/pm-test5/slo_lr_detection/checks"
+  ID: "Restnet_relu"
+
+val:
+  DATA_DIR: "/gcs/pm-test5/slo_lr_detection/val"
+  BATCH_SIZE: 2
